@@ -19,7 +19,7 @@ There is a block for model validation. See "validation_set.py" for details.
 
 import torch
 import matplotlib.pyplot as plt
-from transformers import RobertaForMaskedLM, AutoTokenizer
+from transformers import RobertaModel, AutoTokenizer
 from os import listdir
 from scipy.io import savemat, loadmat
 import numpy as np
@@ -29,7 +29,7 @@ from os.path import join
 #load RoBERTa model
 modelname = 'roberta-base' 
 
-roberta= RobertaForMaskedLM.from_pretrained(modelname)
+roberta= RobertaModel.from_pretrained(modelname)
 tokenizer= AutoTokenizer.from_pretrained(modelname)
 roberta.eval()
 
@@ -76,7 +76,7 @@ def processSentence(sentence,sliding=0):
         print(word+" "+str(probs_targets))
         maxProb = torch.max(probs)
         probs_norm = probs_targets/maxProb
-        word_probs.append(probs_norm.item())
+        word_probs.append(probs_targets.item())
         #for each word, embed the whole sentence up to that word, and extract the last vector (ignore sentencestart and finish tokens)        
     return(word_probs)
 
@@ -154,7 +154,7 @@ for idx, off in zip(np.arange(0,len(filenames)),offsets):
 # xmin,xmax,tmarkings = zip(*text_markings)
 
 # savemat("../data/embed.mat", {"word_markings":word_markings,"words":words,"phon_markings":phon_markings,"phonemes":phonemes,"filenames":filenames})
-savemat(join(paris_path,'embed_420_norm.mat'), {"word_markings":word_markings_trial,"words":word_trial,"phon_markings":phon_markings,"phonemes":phonemes,"filenames":filenames})
+savemat(join(paris_path,'embed_420.mat'), {"word_markings":word_markings_trial,"words":word_trial,"phon_markings":phon_markings,"phonemes":phonemes,"filenames":filenames})
 
 #markings_results = processSentences(tmarkings,sliding=50)
 #output = list(zip(xmin,xmax,tmarkings,markings_results[0]))

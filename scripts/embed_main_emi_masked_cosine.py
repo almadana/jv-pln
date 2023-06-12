@@ -18,8 +18,9 @@ There is a block for model validation. See "validation_set.py" for details.
 #%%  IMPORTS and model loading
 
 import torch
+import torch.nn as nn
 import matplotlib.pyplot as plt
-from transformers import RobertaForMaskedLM, AutoTokenizer
+from transformers import RobertaModel, AutoTokenizer
 from os import listdir
 from scipy.io import savemat, loadmat
 import numpy as np
@@ -29,17 +30,17 @@ from os.path import join
 #load RoBERTa model
 modelname = 'roberta-base' 
 
-roberta= RobertaForMaskedLM.from_pretrained(modelname)
+roberta= RobertaModel.from_pretrained(modelname)
 tokenizer= AutoTokenizer.from_pretrained(modelname)
 roberta.eval()
+cos = nn.CosineSimilarity()
 
-
-#%% main processing function, get predicted probabilities for each word
-#compare the predicted vector for final token at the end of the sentence, with actual encoded vector
+#%% main processing function, get predicted embedding for each word
+#compare the predicted embedding for final token at the end of the sentence, with actual encoded vector
 # sentences: list of sentences. each sentence should be a list of words
 # sliding: if 0, attempts to use every previous word as context for word i. if not, use only the indicated number of previous words
 def processSentence(sentence,sliding=0):
-    word_probs = []
+    word_cosines = []
     for index,word in enumerate(sentence):
         #nTokens_per_word = len(torch.tensor(tokenizer.encode(word))) - 2 #if only one token for this word, this should be 1
         
@@ -55,28 +56,45 @@ def processSentence(sentence,sliding=0):
         #sentence with lacking current word (replaced with mask)
         sentence_up_to_mask = " ".join(sentence[firstWordIndex:(index)])
         sentence_up_to_mask = [sentence_up_to_mask + " <mask>"]
+        masked_word = sentence[index+1] #word that got masked (final word in sentence up to now)
+        
         #print(sentence_up_to_mask)
+        
+        #Tokenize the sentence up to mask
         tokens = torch.tensor(tokenizer(sentence_up_to_mask)['input_ids'])
+        
         #tokenize the ground truth
         target_tokens = torch.tensor(tokenizer(sentence_up_to_now)['input_ids'])
+        
         print(tokens.shape)
+        
         #where in each token batch is each mask?
         row,mask_index = (tokens == tokenizer.mask_token_id).nonzero(as_tuple=True)
-        #get list of ground truth token values for each mask position
+        
+        #get list of ground truth token values for each mask position - this should work!
         target_tokens_in_mask = target_tokens[0,mask_index]
+        print("Target tokens in mask")
+        print(target_tokens_in_mask)
+        print(target_tokens)
+        #alternative
+        #use masked_word
 
-        #predict tokens
-        predicted_tokens = roberta(tokens)[0]
+        # get embeddings for mask
+        predicted_embeddings = roberta(tokens)[0]
         #keep only the prediction at mask
-        predicted_vectors = predicted_tokens[row,mask_index,:]
+        predicted_vector_at_mask = predicted_embeddings[row,mask_index,:]
+
+        # get embeddings for ground truth
+        target_embeddings = roberta(target_tokens)[0]
+        #keep only the prediction at current token
+        embedding_target_vector = target_embeddings[row,mask_index,:]
+
+
+
 
         #apply softmax
-        probs = predicted_vectors.softmax(dim=1)
-        probs_targets = torch.tensor([ probs[i,j] for i,j in zip(row,target_tokens_in_mask)])
-        print(word+" "+str(probs_targets))
-        maxProb = torch.max(probs)
-        probs_norm = probs_targets/maxProb
-        word_probs.append(probs_norm.item())
+        cosines = cos(predicted_vector_at_mask,embedding_target_vector)
+        word_cosines.append(cosines.item())
         #for each word, embed the whole sentence up to that word, and extract the last vector (ignore sentencestart and finish tokens)        
     return(word_probs)
 
@@ -86,7 +104,7 @@ def processSentence(sentence,sliding=0):
 paris_path = '/DATA1/Dropbox/PhD/Project ECOSud/JulesVerne/jv-pln/data'
 #process_textGrid.py
 textGrid_folder = "../data/wav/revised/"
-textGrid_folder = join(paris_path,'wav','revised/')
+#textGrid_folder = join(paris_path,'wav','revised/')
 
 files = listdir(textGrid_folder)
 
@@ -154,7 +172,7 @@ for idx, off in zip(np.arange(0,len(filenames)),offsets):
 # xmin,xmax,tmarkings = zip(*text_markings)
 
 # savemat("../data/embed.mat", {"word_markings":word_markings,"words":words,"phon_markings":phon_markings,"phonemes":phonemes,"filenames":filenames})
-savemat(join(paris_path,'embed_420_norm.mat'), {"word_markings":word_markings_trial,"words":word_trial,"phon_markings":phon_markings,"phonemes":phonemes,"filenames":filenames})
+savemat(join(paris_path,'embed_420_mask_cos.mat'), {"word_markings":word_markings_trial,"words":word_trial,"phon_markings":phon_markings,"phonemes":phonemes,"filenames":filenames})
 
 #markings_results = processSentences(tmarkings,sliding=50)
 #output = list(zip(xmin,xmax,tmarkings,markings_results[0]))
