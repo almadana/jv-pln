@@ -56,7 +56,7 @@ def processSentence(sentence,sliding=0):
         #sentence with lacking current word (replaced with mask)
         sentence_up_to_mask = " ".join(sentence[firstWordIndex:(index)])
         sentence_up_to_mask = [sentence_up_to_mask + " <mask>"]
-        masked_word = sentence[index+1] #word that got masked (final word in sentence up to now)
+        # masked_word = sentence[index+1] #word that got masked (final word in sentence up to now)
         
         #print(sentence_up_to_mask)
         
@@ -104,7 +104,7 @@ def processSentence(sentence,sliding=0):
 paris_path = '/DATA1/Dropbox/PhD/Project ECOSud/JulesVerne/jv-pln/data'
 #process_textGrid.py
 textGrid_folder = "../data/wav/revised/"
-#textGrid_folder = join(paris_path,'wav','revised/')
+textGrid_folder = join(paris_path,'wav','revised/')
 
 files = listdir(textGrid_folder)
 
