@@ -96,7 +96,7 @@ def processSentence(sentence,sliding=0):
         cosines = cos(predicted_vector_at_mask,embedding_target_vector)
         word_cosines.append(cosines.item())
         #for each word, embed the whole sentence up to that word, and extract the last vector (ignore sentencestart and finish tokens)        
-    return(word_probs)
+    return(word_cosines)
 
 
 
