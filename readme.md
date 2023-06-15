@@ -29,6 +29,10 @@ After installation, download the english model and dictionary:
 
 
 
+## RoBERTa embeddings
+
+Semantic unpredictability was estimated using a RoBERTa maasked language model as follows ("roberta-base"). Masked language models are trained to estimate the probability of any given word to occur at a specified  place in text. For each word, a masked content sentence was created including the previous 520 words in the transcription, and replacing the target word with a special '<mask>' token. The masked sentence was then fed to the model, which estimated the probability distribution for each token in the vocabulary to appear in place of the mask. The unpredictability value was calculated as 1 minus the esimated probability of the target word divided by the maximum probability value in the distribution.
+
 ## Analysis pipeline
 
 - Transcribe audio .wav files with Whisper.
